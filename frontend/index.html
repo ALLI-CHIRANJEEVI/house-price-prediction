@@ -1,0 +1,119 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSV Processor Frontend</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="futuristic-bg">
+        <div class="glass-container">
+            <h2 class="futuristic-title">House Price Prediction <span class="accent">AI</span></h2>
+            <p class="subtitle">Upload your CSV file and get instant predictions with a single click.</p>
+                <input type="file" id="csvFile" accept=".csv" class="futuristic-input" />
+                <button class="main-btn" onclick="uploadFile()" id="uploadBtn">Upload & Process</button>
+            <div id="status" class="status-text"></div>
+        </div>
+        <footer class="footer">&copy; 2025 House Price Prediction</footer>
+    </div>
+   <script>
+    let lastOutputFilename = null;
+
+    function uploadFile() {
+        const fileInput = document.getElementById('csvFile');
+        const file = fileInput.files[0];
+        const downloadBtn = document.getElementById('downloadBtn');
+
+        if (!file) {
+            document.getElementById('status').innerText = 'Please select a CSV file.';
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        document.getElementById('status').innerText = 'Uploading and processing...';
+        downloadBtn.disabled = true;
+
+        fetch('http://localhost:5000/process', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log("Backend response:", data); // Debug
+            if (data.error) {
+                throw new Error(data.error);
+            }
+            lastOutputFilename = data.filename;
+            document.getElementById('status').innerText = 'Processing complete!';
+            downloadBtn.disabled = false; // ✅ Enable download button
+        })
+        .catch(err => {
+            document.getElementById('status').innerText = 'Error: ' + err.message;
+        });
+    }
+
+    function downloadFile() {
+        if (!lastOutputFilename) {
+            document.getElementById('status').innerText = 'No file ready for download.';
+            return;
+        }
+
+        fetch(`http://localhost:5000/download/${lastOutputFilename}`)
+            .then(response => {
+                if (!response.ok) throw new Error("File not found on server");
+                return response.blob();
+            })
+            .then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                    function uploadFile() {
+                        const fileInput = document.getElementById('csvFile');
+                        const file = fileInput.files[0];
+
+                        if (!file) {
+                            document.getElementById('status').innerText = 'Please select a CSV file.';
+                            return;
+                        }
+
+                        const formData = new FormData();
+                        formData.append('file', file);
+
+                        document.getElementById('status').innerText = 'Uploading and processing...';
+
+                        fetch('http://localhost:5000/process', {
+                            method: 'POST',
+                            body: formData
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.error) {
+                                throw new Error(data.error);
+                            }
+                            lastOutputFilename = data.filename;
+                            document.getElementById('status').innerText = 'Processing complete!';
+                        })
+                        .catch(err => {
+                            document.getElementById('status').innerText = 'Error: ' + err.message;
+                        });
+                    }
+                a.download = lastOutputFilename;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+            })
+            .catch(err => {
+                document.getElementById('status').innerText = 'Download error: ' + err.message;
+                downloadBtn.disabled = true;
+            });
+    }
+</script>
+
+
+</body>
+</html>
